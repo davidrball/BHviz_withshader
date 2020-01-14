@@ -30,7 +30,7 @@ public class BHTex : MonoBehaviour
     public string zName;
     public string tName;
 
-    public int texsize = 10;
+    public int texsize = 255;
 
 
     [SerializeField] float width = 10.0f;
@@ -93,7 +93,20 @@ public class BHTex : MonoBehaviour
     {
         //array of colors for all the points in the cube
         Color32[] colors = new Color32[texture3D.width * texture3D.height * texture3D.depth];
-        
+        //Color32[,,] colors3D = new Color32[texture3D.width, texture3D.height, texture3D.depth];        
+        //for(int z= 0; z< texture3D.depth;z++)
+        //{
+        //    for(int y=0; y< texture3D.height;y++)
+        //        {
+        //            for(int x=0; x< texture3D.width; x++)
+        //            {
+        //               colors3D[x,y,z] = new Color32(0,0,0,255);
+        //            }
+        //        }
+        //}
+
+
+
         for(int z= 0; z< texture3D.depth;z++)
         {
             for(int y=0; y< texture3D.height;y++)
@@ -132,9 +145,9 @@ public class BHTex : MonoBehaviour
         float fracz = floatz/texsize;
 
         //map fractional distance to simulation array distance
-        float arr_distx = fracx*arraysize;
-        float arr_disty = fracy*arraysize;
-        float arr_distz = fracz*arraysize;
+        float arr_distx = fracx*(arraysize-1f);
+        float arr_disty = fracy*(arraysize-1f);
+        float arr_distz = fracz*(arraysize-1f);
 
         int rounded_distx = (int)Math.Round(arr_distx,0);
         int rounded_disty = (int)Math.Round(arr_disty,0);
@@ -151,7 +164,7 @@ public class BHTex : MonoBehaviour
             int grid_yval = Convert.ToInt32(pointList[i][yName]);
             int grid_zval = Convert.ToInt32(pointList[i][zName]);
 
-            if (grid_xval==rounded_distx && grid_yval==rounded_disty && grid_zval==rounded_distz)
+            if (grid_xval==rounded_distx && grid_yval==rounded_disty && grid_yval==rounded_disty)
             {
                 float mydens=System.Convert.ToSingle(pointList[i][tName]);
                 //now map mydens to 0-255, and then into byte format for color
