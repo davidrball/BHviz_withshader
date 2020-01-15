@@ -14,7 +14,7 @@ public class BHTex : MonoBehaviour
     Material material;
     Texture3D texture3D;
 
-    public string inputfile = "test_csv";
+    string inputfile = "3D_arr50_M50_nohead_nonan";
 
 
     private List<Dictionary<string, object>> pointList;
@@ -30,7 +30,7 @@ public class BHTex : MonoBehaviour
     public string zName;
     public string tName;
 
-    public int texsize = 255;
+    int texsize = 50;
 
 
     [SerializeField] float width = 10.0f;
@@ -39,7 +39,7 @@ public class BHTex : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        pointList = CSVReader.Read("test_csv");
+        pointList = CSVReader.Read(inputfile);
          List<string> columnList = new List<string>(pointList[1].Keys);
     Debug.Log("There are " + columnList.Count + " columns in CSV");
     foreach (string key in columnList)
@@ -59,6 +59,17 @@ public class BHTex : MonoBehaviour
     float yMin = FindMinValue(yName);
     float zMin = FindMinValue(zName);
     float tMin = FindMinValue(tName);
+
+
+    //just checking t vals
+    //for (int i=0; i<pointList.Count;i++)
+    //{
+    //    Debug.Log(pointList[i][tName]);
+    //    Debug.Log("\n");
+    //}
+
+
+    //Debug.Log(pointList[])
     float array_size = System.Convert.ToSingle(IntCubeRoot(pointList.Count));
     //Debug.Log(IntCubeRoot(50*50*50)); // , so we can find length of our list
         
@@ -73,10 +84,10 @@ public class BHTex : MonoBehaviour
         texture3D = new Texture3D(texsize,texsize,texsize,TextureFormat.RGBA32,false);
         texture3D.wrapMode = TextureWrapMode.Clamp;
         texture3D.filterMode = FilterMode.Bilinear;
-        CreateColor(array_size, tMax);
+        CreateColor(array_size, tMax, tMin);
     }
 
-    void CreateColor(float arraysize, float tMax)
+    void CreateColor(float arraysize, float tMax, float tMin)
     {
         //array of colors for all the points in the cube
         Color32[] colors = new Color32[texture3D.width * texture3D.height * texture3D.depth];
@@ -87,16 +98,16 @@ public class BHTex : MonoBehaviour
                 {
                     for(int x=0; x< texture3D.width; x++)
                     {
-                        //Color32 temp = GetColor(x,y,z, arraysize, tMax);
+                        Color32 temp = GetColor(x,y,z, arraysize, tMax, tMin);
                         
                         int index = x+y*texture3D.width + z*texture3D.width*texture3D.height;
 
                         //just for testing
-                        byte bytex = System.Convert.ToByte(x);
+                        //byte bytex = System.Convert.ToByte(x);
                         //byte bytex=255;
                         
                         
-                        Color32 test_tmp = new Color32(bytex,0,0,255);
+                        //Color32 test_tmp = new Color32(bytex,0,0,255);
                         
                         //if (x>127)
                         //{
@@ -105,8 +116,8 @@ public class BHTex : MonoBehaviour
                          //   test_tmp.g=255;
                         //}
 
-                        //colors[index] = temp;
-                        colors[index] = test_tmp;
+                        colors[index] = temp;
+                        //colors[index] = test_tmp;
                     }
                 }
         }
@@ -115,32 +126,9 @@ public class BHTex : MonoBehaviour
     material.SetTexture("_MainTex",texture3D);
     }
 
-    void CreateColor3D(float arraysize, float tMax)
-    {
-        //create 3D array of colors w/ the desired dims in array
-        Color32[,,] colors3D = new Color32[texture3D.width, texture3D.height, texture3D.depth];
-        Color32[] colors = new Color32[texture3D.width * texture3D.height * texture3D.depth];
-        for(int z= 0; z< texture3D.depth;z++)
-        {
-            for(int y=0; y< texture3D.height;y++)
-                {
-                    for(int x=0; x< texture3D.width; x++)
-                    {
-                       colors3D[x,y,z] = GetColor(x,y,z,arraysize,tMax);
-                    }
-                }
-        }
 
 
-
-    texture3D.SetPixels32(colors);
-    texture3D.Apply();
-    material.SetTexture("_MainTex",texture3D);
-
-    }
-
-
-    Color32 GetColor(int x, int y, int z, float arraysize, float tMax)
+    Color32 GetColor(int x, int y, int z, float arraysize, float tMax,float tMin)
     {   
         /*For new stuff, first we should map x,y,z given in the texture
         coords (0-255) to the indices given from data
@@ -182,9 +170,11 @@ public class BHTex : MonoBehaviour
 
             if (grid_xval==rounded_distx && grid_yval==rounded_disty && grid_yval==rounded_disty)
             {
+
+                //Debug.Log("triggered conditional within getcolor\n");
                 float mydens=System.Convert.ToSingle(pointList[i][tName]);
                 //now map mydens to 0-255, and then into byte format for color
-                float fracdens = mydens/tMax;
+                float fracdens = (mydens-tMin)/(tMax-tMin);//map to 0-1
                 float scaled_fracdens = fracdens*255;
                 byte bytedens = System.Convert.ToByte(scaled_fracdens);
 
