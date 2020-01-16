@@ -6,7 +6,7 @@ using System;
 
 [RequireComponent(typeof(MeshRenderer))]
 [RequireComponent(typeof(MeshFilter))]
-[ExecuteInEditMode]
+//[ExecuteInEditMode]
 public class BHTex : MonoBehaviour
 {
     MeshRenderer meshRenderer;
@@ -19,10 +19,10 @@ public class BHTex : MonoBehaviour
 
     private List<Dictionary<string, object>> pointList;
     // Indices for columns to be assigned
-    public int columnX = 0;
-    public int columnY = 1;
-    public int columnZ = 2;
-    public int columnT = 3;
+    int columnX = 0;
+    int columnY = 2;
+    int columnZ = 1;
+    int columnT = 4;
  
     // Full column names
     public string xName;
@@ -30,7 +30,7 @@ public class BHTex : MonoBehaviour
     public string zName;
     public string tName;
 
-    int texsize = 50;
+    int texsize = 255;
 
 
     [SerializeField] float width = 10.0f;
@@ -144,7 +144,7 @@ public class BHTex : MonoBehaviour
 
         //x,y,z go from 0-texsize
         //defining fractional distance along each axis
-        float fracx = floatx/texsize;
+        float fracx = floatx/texsize; //these are only going from 0 to .9, not 0 to 1 (for texsize=10)
         float fracy = floaty/texsize;
         float fracz = floatz/texsize;
 
@@ -157,57 +157,61 @@ public class BHTex : MonoBehaviour
         int rounded_disty = (int)Math.Round(arr_disty);
         int rounded_distz = (int)Math.Round(arr_distz);
 
-        //loop through simulation grid, if grid location matches our rounded_distx,y,z numbers, then grab the density at this point
-        //should be a faster way to do this, can prob convert rounded vals to a flattened index
-        //map this to values in pointlist, assuming we're saving the data in some specified ordered way
-        //what we have here is slower but more sure to be correct since we haven't carefully formatted data
+        //Debug.Log(string.Format("xval: {0}, yval: {1}, zval: {2}", fracx,fracy,fracz));
+
+        //xyz coords on the simulation grid, but still in UNITY coord frame
         
-        for (var i=0; i<pointList.Count;i++)
-        {
-            int grid_xval = Convert.ToInt32(pointList[i][xName]);
-            int grid_yval = Convert.ToInt32(pointList[i][yName]);
-            int grid_zval = Convert.ToInt32(pointList[i][zName]);
 
-            if (grid_xval==rounded_distx && grid_yval==rounded_disty && grid_yval==rounded_disty)
-            {
+        //x stays the same
+        //unity y corresponds to simulation z
 
-                //Debug.Log("triggered conditional within getcolor\n");
-                float mydens=System.Convert.ToSingle(pointList[i][tName]);
+        //unity z corresponds to simulation y
+        
+        
+        //find index in pointlist that corresponds to this x,y,z val
+
+        int intarraysize = System.Convert.ToInt32(arraysize);
+        
+        int index = rounded_disty + rounded_distz*intarraysize + rounded_distx*intarraysize*intarraysize;
+
+        float mydens=System.Convert.ToSingle(pointList[index][tName]);
                 //now map mydens to 0-255, and then into byte format for color
-                float fracdens = (mydens-tMin)/(tMax-tMin);//map to 0-1
-                float scaled_fracdens = fracdens*255;
-                byte bytedens = System.Convert.ToByte(scaled_fracdens);
+        float fracdens = (mydens-tMin)/(tMax-tMin);//map to 0-1
+        float scaled_fracdens = fracdens*255;
 
-                return new Color32(bytedens, bytedens, bytedens, 255);
-            }
-
+        //applying fractional dens floor
+        if (fracdens<.01f)
+        {
+        fracdens=.01f;
         }
 
-        //now we should have the grid indices to grab
+        //taking log of density w/ floor applied
+        float logn = Convert.ToSingle(Math.Log10(Convert.ToDouble(fracdens)));
+
+     
+        //lognMin has to match our limit sest in conditional density floor statement
+        float lognMax=0;
+        float lognMin=-2;
+
+        //so divide by 6 and add 1 to get our range to where we want it?
+        logn = (logn - lognMin)/(lognMax-lognMin);//rescale log to 0-1
+
+        //rescale to 0-255
+        logn = logn*255;
+
+        byte bytedens = System.Convert.ToByte(logn);
 
 
-        //ok, now turn these into grid indices
 
-
-        //float dist = (floatx*floatx + floaty*floaty + floatz*floatz)/(texture3D.width*texture3D.width + texture3D.height*texture3D.height+texture3D.depth*texture3D.depth); // just square of distance from 0,0
-        //dist = dist * 255f;
-        //float[] mydist = {dist};
-        //Debug.Log(mydist);
-        //byte[] mynum = System.BitConverter.GetBytes(mydist);
-        //return new Color32(mynum[0], mynum[0], mynum[0], 255);
-        //Debug.Log(dist);
-
-
-        //byte bytedist = System.Convert.ToByte(dist);
-        //return new Color32(bytedist,bytedist,bytedist,255);
-        return new Color32(0,0,0,255);
+        return new Color32(0, bytedens, 0, 255);
+     
     }
 
 
     // Update is called once per frame
     void Update()
     {
-        
+         Calculate3DUVW();
     }
 
     private float FindMaxValue(string columnName)
